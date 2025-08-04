@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bi-Weekly Salary Calculator (2025/2026)</title>
+    <title>UK Bi-Weekly Salary Calculator (2025/2026)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -22,7 +22,15 @@
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800">UK Bi-Weekly Salary Calculator</h1>
             <p class="text-gray-500 mt-2">For the 2025/2026 Tax Year</p>
         </div>
-
+<div class="mb-4">
+    <label for="payFrequency" class="block text-lg font-medium text-gray-700 mb-2">Select Pay Frequency</label>
+    <select id="payFrequency" class="w-full py-3 px-4 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <option value="biweekly" selected>Bi-Weekly (every 2 weeks)</option>
+        <option value="weekly">Weekly</option>
+        <option value="fourweeks">Every 4 Weeks</option>
+        <option value="monthly">Monthly (4.4 weeks avg)</option>
+    </select>
+</div>
         <!-- Input Section -->
         <div class="mb-8">
             <label for="biWeeklySalary" class="block text-lg font-medium text-gray-700 mb-2">Enter Bi-Weekly Gross Salary (£)</label>
@@ -43,14 +51,14 @@
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Gross Pay (2 weeks)</span>
-                        <span id="grossPay" class="font-semibold text-gray-800 text-lg">£1,500.00</span>
+                        <span id="grossPay" class="font-semibold text-gray-800 text-lg">£600.00</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-red-600">PAYE (Income Tax 20%)</span>
                         <span id="paye" class="font-semibold text-red-500 text-lg">- £135.92</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-red-600">National Insurance(8%)</span>
+                        <span class="text-red-600">National Insurance (8%)</span>
                         <span id="ni" class="font-semibold text-red-500 text-lg">- £81.28</span>
                     </div>
                     <hr class="my-2 border-gray-200">
@@ -94,91 +102,122 @@
 
     </div>
 
-    <script>
-        // Get the input element
-        const salaryInput = document.getElementById('biWeeklySalary');
+   <script>
+    const salaryInput = document.getElementById('biWeeklySalary');
+    const payFrequency = document.getElementById('payFrequency');
 
-        // Function to format numbers as currency
-        const formatCurrency = (value) => `£${value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+    const formatCurrency = (value) => `£${value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
 
-        // Main calculation function
-        function calculateSalary() {
-            // --- Tax & NI Rates for 2025/2026 ---
-            const pa = 12570; // Personal Allowance
-            const taperThreshold = 100000;
-            const basicRateLimit = 37700;
-            const higherRateLimit = 125140;
-            const basicRate = 0.20;
-            const higherRate = 0.40;
-            const additionalRate = 0.45;
-            
-            const niPrimaryThresholdBiWeekly = 484;
-            const niUpperLimitBiWeekly = 1934;
-            const niRate1 = 0.08;
-            const niRate2 = 0.02;
+    function calculateSalary() {
+        const pa = 12570;
+        const taperThreshold = 100000;
+        const basicRateLimit = 37700;
+        const higherRateLimit = 125140;
+        const basicRate = 0.20;
+        const higherRate = 0.40;
+        const additionalRate = 0.45;
 
-            // --- Get Input Value ---
-            const biWeeklySalary = parseFloat(salaryInput.value) || 0;
-            const annualSalary = biWeeklySalary * 26;
+        const niPrimaryThresholdWeekly = 242;
+        const niUpperLimitWeekly = 967;
+        const niPrimaryThresholdBiWeekly = 484;
+        const niUpperLimitBiWeekly = 1934;
+        const niPrimaryThreshold4Weeks = 968;
+        const niUpperLimit4Weeks = 3868;
+        const niPrimaryThresholdMonthly = 1052;
+        const niUpperLimitMonthly = 4203;
 
-            // --- PAYE (Income Tax) Calculation ---
-            let annualTax = 0;
-            let effectivePA = pa;
+        const niRate1 = 0.08;
+        const niRate2 = 0.02;
 
-            // Taper personal allowance for high earners
-            if (annualSalary > taperThreshold) {
-                effectivePA = Math.max(0, pa - (annualSalary - taperThreshold) / 2);
-            }
-            
-            const taxableIncome = Math.max(0, annualSalary - effectivePA);
+        const grossInput = parseFloat(salaryInput.value) || 0;
+        const frequency = payFrequency.value;
 
-            if (taxableIncome > 0) {
-                if (taxableIncome <= basicRateLimit) {
-                    annualTax = taxableIncome * basicRate;
-                } else if (taxableIncome <= higherRateLimit) {
-                    annualTax = (basicRateLimit * basicRate) + ((taxableIncome - basicRateLimit) * higherRate);
-                } else {
-                    annualTax = (basicRateLimit * basicRate) + ((higherRateLimit - basicRateLimit) * higherRate) + ((taxableIncome - higherRateLimit) * additionalRate);
-                }
-            }
-            
-            const biWeeklyTax = annualTax / 26;
+        let annualSalary, niPrimaryThreshold, niUpperLimit;
 
-            // --- National Insurance Calculation ---
-            let biWeeklyNI = 0;
-            if (biWeeklySalary > niPrimaryThresholdBiWeekly) {
-                if (biWeeklySalary <= niUpperLimitBiWeekly) {
-                    biWeeklyNI = (biWeeklySalary - niPrimaryThresholdBiWeekly) * niRate1;
-                } else {
-                    const niAtRate1 = (niUpperLimitBiWeekly - niPrimaryThresholdBiWeekly) * niRate1;
-                    const niAtRate2 = (biWeeklySalary - niUpperLimitBiWeekly) * niRate2;
-                    biWeeklyNI = niAtRate1 + niAtRate2;
-                }
-            }
-            const annualNI = biWeeklyNI * 26;
-
-            // --- Final Calculations ---
-            const totalDeductions = biWeeklyTax + biWeeklyNI;
-            const netPay = biWeeklySalary - totalDeductions;
-            const annualNet = netPay * 26;
-
-            // --- Update the UI ---
-            document.getElementById('grossPay').textContent = formatCurrency(biWeeklySalary);
-            document.getElementById('paye').textContent = `- ${formatCurrency(biWeeklyTax)}`;
-            document.getElementById('ni').textContent = `- ${formatCurrency(biWeeklyNI)}`;
-            document.getElementById('netPay').textContent = formatCurrency(netPay);
-            
-            document.getElementById('annualGross').textContent = formatCurrency(annualSalary);
-            document.getElementById('annualNet').textContent = formatCurrency(annualNet);
-            document.getElementById('annualTax').textContent = formatCurrency(annualTax);
-            document.getElementById('annualNI').textContent = formatCurrency(annualNI);
+        switch (frequency) {
+            case 'weekly':
+                annualSalary = grossInput * 52;
+                niPrimaryThreshold = niPrimaryThresholdWeekly;
+                niUpperLimit = niUpperLimitWeekly;
+                break;
+            case 'biweekly':
+                annualSalary = grossInput * 26;
+                niPrimaryThreshold = niPrimaryThresholdBiWeekly;
+                niUpperLimit = niUpperLimitBiWeekly;
+                break;
+            case 'fourweeks':
+                annualSalary = grossInput * 13;
+                niPrimaryThreshold = niPrimaryThreshold4Weeks;
+                niUpperLimit = niUpperLimit4Weeks;
+                break;
+            case 'monthly':
+                annualSalary = grossInput * 12;
+                niPrimaryThreshold = niPrimaryThresholdMonthly;
+                niUpperLimit = niUpperLimitMonthly;
+                break;
+            default:
+                annualSalary = grossInput * 26;
+                niPrimaryThreshold = niPrimaryThresholdBiWeekly;
+                niUpperLimit = niUpperLimitBiWeekly;
         }
 
-        // --- Event Listeners ---
-        salaryInput.addEventListener('input', calculateSalary);
-        
-        // Initial calculation on page load
-        window.addEventListener('load', calculateSalary);
-    </script>
+        // Income Tax
+        let annualTax = 0;
+        let effectivePA = pa;
+
+        if (annualSalary > taperThreshold) {
+            effectivePA = Math.max(0, pa - (annualSalary - taperThreshold) / 2);
+        }
+
+        const taxableIncome = Math.max(0, annualSalary - effectivePA);
+
+        if (taxableIncome > 0) {
+            if (taxableIncome <= basicRateLimit) {
+                annualTax = taxableIncome * basicRate;
+            } else if (taxableIncome <= higherRateLimit) {
+                annualTax = (basicRateLimit * basicRate) + ((taxableIncome - basicRateLimit) * higherRate);
+            } else {
+                annualTax = (basicRateLimit * basicRate) + ((higherRateLimit - basicRateLimit) * higherRate) + ((taxableIncome - higherRateLimit) * additionalRate);
+            }
+        }
+
+        const periodCount = annualSalary / grossInput;
+        const periodTax = annualTax / periodCount;
+
+        // National Insurance
+        let niThisPeriod = 0;
+
+        if (grossInput > niPrimaryThreshold) {
+            if (grossInput <= niUpperLimit) {
+                niThisPeriod = (grossInput - niPrimaryThreshold) * niRate1;
+            } else {
+                const atRate1 = (niUpperLimit - niPrimaryThreshold) * niRate1;
+                const atRate2 = (grossInput - niUpperLimit) * niRate2;
+                niThisPeriod = atRate1 + atRate2;
+            }
+        }
+
+        const totalDeductions = periodTax + niThisPeriod;
+        const netPay = grossInput - totalDeductions;
+        const annualNI = niThisPeriod * periodCount;
+        const annualNet = netPay * periodCount;
+
+        // Update UI
+        document.getElementById('grossPay').textContent = formatCurrency(grossInput);
+        document.getElementById('paye').textContent = `- ${formatCurrency(periodTax)}`;
+        document.getElementById('ni').textContent = `- ${formatCurrency(niThisPeriod)}`;
+        document.getElementById('netPay').textContent = formatCurrency(netPay);
+
+        document.getElementById('annualGross').textContent = formatCurrency(annualSalary);
+        document.getElementById('annualNet').textContent = formatCurrency(annualNet);
+        document.getElementById('annualTax').textContent = formatCurrency(annualTax);
+        document.getElementById('annualNI').textContent = formatCurrency(annualNI);
+    }
+
+    salaryInput.addEventListener('input', calculateSalary);
+    payFrequency.addEventListener('change', calculateSalary);
+    window.addEventListener('load', calculateSalary);
+</script>
+
 </body>
 </html>
