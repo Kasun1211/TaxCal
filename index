@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK Bi-Weekly Salary Calculator (2025/2026)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .result-card {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">UK Bi-Weekly Salary Calculator</h1>
+            <p class="text-gray-500 mt-2">For the 2025/2026 Tax Year</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="mb-8">
+            <label for="biWeeklySalary" class="block text-lg font-medium text-gray-700 mb-2">Enter Bi-Weekly Gross Salary (£)</label>
+            <div class="relative">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <span class="text-gray-500 sm:text-sm">£</span>
+                </div>
+                <input type="number" id="biWeeklySalary" value="1500" class="w-full pl-7 pr-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 1500">
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Pay Breakdown -->
+            <div class="bg-gray-50 p-6 rounded-xl result-card">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Your Pay Breakdown</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Gross Pay (2 weeks)</span>
+                        <span id="grossPay" class="font-semibold text-gray-800 text-lg">£1,500.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-red-600">PAYE (Income Tax)</span>
+                        <span id="paye" class="font-semibold text-red-500 text-lg">- £135.92</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-red-600">National Insurance</span>
+                        <span id="ni" class="font-semibold text-red-500 text-lg">- £81.28</span>
+                    </div>
+                    <hr class="my-2 border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-gray-800 text-lg">Net "Take-Home" Pay</span>
+                        <span id="netPay" class="font-bold text-green-600 text-2xl">£1,282.80</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Annual Summary -->
+            <div class="bg-gray-50 p-6 rounded-xl result-card">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Annual Summary (Estimate)</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Gross Salary</span>
+                        <span id="annualGross" class="font-semibold text-gray-800 text-lg">£39,000.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Net Salary</span>
+                        <span id="annualNet" class="font-semibold text-gray-800 text-lg">£33,352.80</span>
+                    </div>
+                     <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Income Tax Paid</span>
+                        <span id="annualTax" class="font-semibold text-gray-800 text-lg">£3,533.92</span>
+                    </div>
+                     <div class="flex justify-between items-center">
+                        <span class="text-gray-600">National Insurance Paid</span>
+                        <span id="annualNI" class="font-semibold text-gray-800 text-lg">£2,113.28</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Assumptions Footer -->
+        <div class="mt-8 text-center text-xs text-gray-400">
+            <p>
+                <strong>Assumptions:</strong> 2025/2026 tax year for England/NI/Wales. Standard tax code 1257L and NI Category 'A'. Does not include student loans or pension deductions. This is an estimate for illustrative purposes.
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // Get the input element
+        const salaryInput = document.getElementById('biWeeklySalary');
+
+        // Function to format numbers as currency
+        const formatCurrency = (value) => `£${value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+
+        // Main calculation function
+        function calculateSalary() {
+            // --- Tax & NI Rates for 2025/2026 ---
+            const pa = 12570; // Personal Allowance
+            const taperThreshold = 100000;
+            const basicRateLimit = 37700;
+            const higherRateLimit = 125140;
+            const basicRate = 0.20;
+            const higherRate = 0.40;
+            const additionalRate = 0.45;
+            
+            const niPrimaryThresholdBiWeekly = 484;
+            const niUpperLimitBiWeekly = 1934;
+            const niRate1 = 0.08;
+            const niRate2 = 0.02;
+
+            // --- Get Input Value ---
+            const biWeeklySalary = parseFloat(salaryInput.value) || 0;
+            const annualSalary = biWeeklySalary * 26;
+
+            // --- PAYE (Income Tax) Calculation ---
+            let annualTax = 0;
+            let effectivePA = pa;
+
+            // Taper personal allowance for high earners
+            if (annualSalary > taperThreshold) {
+                effectivePA = Math.max(0, pa - (annualSalary - taperThreshold) / 2);
+            }
+            
+            const taxableIncome = Math.max(0, annualSalary - effectivePA);
+
+            if (taxableIncome > 0) {
+                if (taxableIncome <= basicRateLimit) {
+                    annualTax = taxableIncome * basicRate;
+                } else if (taxableIncome <= higherRateLimit) {
+                    annualTax = (basicRateLimit * basicRate) + ((taxableIncome - basicRateLimit) * higherRate);
+                } else {
+                    annualTax = (basicRateLimit * basicRate) + ((higherRateLimit - basicRateLimit) * higherRate) + ((taxableIncome - higherRateLimit) * additionalRate);
+                }
+            }
+            
+            const biWeeklyTax = annualTax / 26;
+
+            // --- National Insurance Calculation ---
+            let biWeeklyNI = 0;
+            if (biWeeklySalary > niPrimaryThresholdBiWeekly) {
+                if (biWeeklySalary <= niUpperLimitBiWeekly) {
+                    biWeeklyNI = (biWeeklySalary - niPrimaryThresholdBiWeekly) * niRate1;
+                } else {
+                    const niAtRate1 = (niUpperLimitBiWeekly - niPrimaryThresholdBiWeekly) * niRate1;
+                    const niAtRate2 = (biWeeklySalary - niUpperLimitBiWeekly) * niRate2;
+                    biWeeklyNI = niAtRate1 + niAtRate2;
+                }
+            }
+            const annualNI = biWeeklyNI * 26;
+
+            // --- Final Calculations ---
+            const totalDeductions = biWeeklyTax + biWeeklyNI;
+            const netPay = biWeeklySalary - totalDeductions;
+            const annualNet = netPay * 26;
+
+            // --- Update the UI ---
+            document.getElementById('grossPay').textContent = formatCurrency(biWeeklySalary);
+            document.getElementById('paye').textContent = `- ${formatCurrency(biWeeklyTax)}`;
+            document.getElementById('ni').textContent = `- ${formatCurrency(biWeeklyNI)}`;
+            document.getElementById('netPay').textContent = formatCurrency(netPay);
+            
+            document.getElementById('annualGross').textContent = formatCurrency(annualSalary);
+            document.getElementById('annualNet').textContent = formatCurrency(annualNet);
+            document.getElementById('annualTax').textContent = formatCurrency(annualTax);
+            document.getElementById('annualNI').textContent = formatCurrency(annualNI);
+        }
+
+        // --- Event Listeners ---
+        salaryInput.addEventListener('input', calculateSalary);
+        
+        // Initial calculation on page load
+        window.addEventListener('load', calculateSalary);
+    </script>
+</body>
+</html>
